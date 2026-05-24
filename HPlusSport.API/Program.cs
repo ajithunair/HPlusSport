@@ -17,7 +17,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<ShopContext>(options =>
 {
-    options.UseInMemoryDatabase("Shop");
+    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgreSqlConnectionString"));
 });
 
 var app = builder.Build();
