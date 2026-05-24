@@ -1,4 +1,5 @@
 ﻿using HPlusSport.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -7,15 +8,14 @@ namespace HPlusSport.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ProductsController : ControllerBase
     {
-        private readonly ShopContext _context;
+        private readonly AppDbContext _context;
 
-        public ProductsController(ShopContext context)
+        public ProductsController(AppDbContext context)
         {
             _context = context;
-
-            _context.Database.EnsureCreated();
         }
 
         [HttpGet]
