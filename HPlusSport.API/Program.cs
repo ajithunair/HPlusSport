@@ -41,7 +41,7 @@ using (var scope = app.Services.CreateScope())
     await db.Database.EnsureCreatedAsync();
 }
 
-app.MapGet("/products", async (ShopContext _context) =>
+/* app.MapGet("/products", async (ShopContext _context) =>
 {
     return await _context.Products.ToArrayAsync();
 });
@@ -132,6 +132,6 @@ app.MapPost("/products/Delete", async (ShopContext _context, [FromQuery] int[] i
     await _context.SaveChangesAsync();
 
     return Results.Ok(products);
-});
+}); */
 
 app.Run();
