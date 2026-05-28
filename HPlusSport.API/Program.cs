@@ -10,11 +10,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers()/*
+builder.Services.AddControllers();/*
     .ConfigureApiBehaviorOptions(options =>
     {
         options.SuppressModelStateInvalidFilter = true;
-    })*/;
+    });*/
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -74,7 +74,7 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
-app.MapGet("/products", async (AppDbContext _context) =>
+/* app.MapGet("/products", async (AppDbContext _context) =>
 {
     return await _context.Products.ToArrayAsync();
 });
@@ -165,6 +165,6 @@ app.MapPost("/products/Delete", async (AppDbContext _context, [FromQuery] int[] 
     await _context.SaveChangesAsync();
 
     return Results.Ok(products);
-});
+}); */
 
 app.Run();
