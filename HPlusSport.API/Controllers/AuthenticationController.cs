@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 using HPlusSport.API.Models;
 using HPlusSport.API.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
@@ -18,16 +16,14 @@ namespace HPlusSport.API.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
 
-        public AuthenticationController(UserManager<ApplicationUser> _userManager, RoleManager<IdentityRole> _roleManager, AppDbContext _context, IConfiguration _configuration)
+        public AuthenticationController(
+            UserManager<ApplicationUser> userManager,
+            IConfiguration configuration)
         {
-            this._userManager = _userManager;
-            this._roleManager = _roleManager;
-            this._context = _context;
-            this._configuration = _configuration;
+            _userManager = userManager;
+            _configuration = configuration;
         }
 
         [HttpPost("register")]
@@ -76,31 +72,39 @@ namespace HPlusSport.API.Controllers
             if (existingUser != null && await _userManager.CheckPasswordAsync(existingUser, model.Password))
             {
                 // Generate JWT token
-                var token = GenerateJWTTokenAsync(existingUser);
+                var token = GenerateJwtToken(existingUser);
                 return Ok(token);
             }
 
             return BadRequest("Invalid email or password.");
         }
 
-        private async Task<AuthResultVM> GenerateJWTTokenAsync(ApplicationUser user)
+        private AuthResultVM GenerateJwtToken(ApplicationUser user)
         {
+            var email = user.Email ?? user.UserName ?? string.Empty;
+            var userName = user.UserName ?? user.Email ?? user.Id;
             var claims = new List<Claim>()
             {
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim(ClaimTypes.Email, email),
+                new Claim(ClaimTypes.Name, userName),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(ClaimTypes.NameIdentifier, user.Id)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]));
+            var jwtSecretKey = GetRequiredJwtSetting("SecretKey");
+            var jwtIssuer = GetRequiredJwtSetting("Issuer");
+            var jwtAudience = GetRequiredJwtSetting("Audience");
+            var expirationInMinutes = _configuration.GetValue<double?>("JwtSettings:ExpirationInMinutes")
+                ?? throw new InvalidOperationException("JWT expiration time is not configured.");
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
-                issuer: _configuration["JwtSettings:Issuer"],
-                audience: _configuration["JwtSettings:Audience"],
+                issuer: jwtIssuer,
+                audience: jwtAudience,
                 claims: claims,
-                expires: DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["JwtSettings:ExpirationInMinutes"])),
+                expires: DateTime.UtcNow.AddMinutes(expirationInMinutes),
                 signingCredentials: creds
             );
 
@@ -109,6 +113,12 @@ namespace HPlusSport.API.Controllers
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
                 ExpiresAt = token.ValidTo   
             };
+        }
+
+        private string GetRequiredJwtSetting(string key)
+        {
+            return _configuration[$"JwtSettings:{key}"]
+                ?? throw new InvalidOperationException($"JWT setting '{key}' is not configured.");
         }
     }
 
