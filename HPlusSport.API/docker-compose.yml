@@ -1,0 +1,34 @@
+services:
+  hplussport-api:
+    platform: linux/arm64
+    build:
+      context: ..
+      dockerfile: Dockerfile
+
+    container_name: hplussport-api
+    
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgresdb
+    
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgresdb;Port=5432;Database=hplussport-db;Username=authuser;Password=authpass
+
+  postgresdb:
+    platform: linux/arm64
+    image: postgres:16
+    container_name: hplussport-db
+    restart: always
+    environment:
+      POSTGRES_DB: hplussport-db
+      POSTGRES_USER: authuser
+      POSTGRES_PASSWORD: authpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
